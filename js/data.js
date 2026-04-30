@@ -89,3 +89,20 @@ export function deleteEmployee(employeeId) {
 
   saveData();
 }
+
+export function addEmployee(employeeData) {
+  const monthData = getCurrentMonthData();
+
+  monthData.employees.push({
+    id: crypto.randomUUID(),
+    name: employeeData.name,
+    surname: employeeData.surname,
+    dateOfBirth: employeeData.dateOfBirth,
+    position: employeeData.position,
+    salary: Number(employeeData.salary),
+    assignments: [],
+    vacationDays: [],
+  });
+
+  saveData();
+}

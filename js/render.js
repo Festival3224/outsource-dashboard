@@ -180,7 +180,7 @@ export function renderContent() {
         </p>
       </div>
 
-      <button class="primary-button">
+      <button class="primary-button" data-add-employee>
         ${addButtonText}
       </button>
     </div>

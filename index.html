@@ -29,5 +29,65 @@
       <div id="content"></div>
     </main>
   </div>
+
+  <!-- MODAL -->
+  <div class="modal hidden" id="employee-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Add New Employee</h2>
+      <button class="modal-close" id="employee-modal-close">×</button>
+    </div>
+
+    <form id="employee-form" class="form">
+      <label>
+        Name: *
+        <input type="text" name="name" required>
+        <span class="error-message" data-error="name"></span>
+      </label>
+
+      <label>
+        Surname: *
+        <input type="text" name="surname" required>
+        <span class="error-message" data-error="surname"></span>
+      </label>
+
+      <label>
+        Date of Birth: *
+        <input type="date" name="dateOfBirth" required>
+        <span class="error-message" data-error="dateOfBirth"></span>
+      </label>
+
+      <label>
+        Position: *
+        <select name="position" required>
+          <option value="">Select position</option>
+          <option value="Frontend Developer">Frontend Developer</option>
+          <option value="Backend Developer">Backend Developer</option>
+          <option value="Fullstack Developer">Fullstack Developer</option>
+          <option value="Project Manager">Project Manager</option>
+          <option value="Designer">Designer</option>
+          <option value="QA Engineer">QA Engineer</option>
+        </select>
+        <span class="error-message" data-error="position"></span>
+      </label>
+
+      <label>
+        Salary: *
+        <input type="number" name="salary" min="0" step="0.01" required>
+        <span class="error-message" data-error="salary"></span>
+      </label>
+
+      <div class="form-actions">
+        <button type="button" class="secondary-button" id="employee-form-cancel">
+          Cancel
+        </button>
+        <button type="submit" class="primary-button" id="employee-submit" disabled>
+          Save
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
 </body>
 </html>
