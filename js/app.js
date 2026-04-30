@@ -1,6 +1,12 @@
 import { state } from './state.js';
 import { loadData } from './storage.js';
-import { getCurrentMonthData, seedCurrentMonthData } from './data.js';
+
+import {
+  getCurrentMonthData,
+  seedCurrentMonthData,
+  deleteEmployee,
+} from './data.js';
+
 import { renderApp } from './render.js';
 
 function setActiveTab() {
@@ -17,6 +23,20 @@ function initEventListeners() {
   const projectsTab = document.querySelector('#projects-tab');
   const employeesTab = document.querySelector('#employees-tab');
   const seedButton = document.querySelector('#seed-button');
+  const content = document.querySelector('#content');
+
+  content.addEventListener('click', (event) => {
+    const deleteButton = event.target.closest('[data-delete-employee-id]');
+
+    if (!deleteButton) {
+        return;
+    }
+
+    const employeeId = deleteButton.dataset.deleteEmployeeId;
+
+    deleteEmployee(employeeId);
+    renderApp();
+  });
 
   monthSelect.addEventListener('change', (event) => {
     state.currentMonth = Number(event.target.value);

@@ -102,7 +102,7 @@ function renderEmployeesTable(employees) {
             </td>
             <td>${formatCurrency(0)}</td>
             <td>
-              <button class="table-button danger">
+              <button class="table-button danger" data-delete-employee-id="${employee.id}">
                 Delete
               </button>
             </td>

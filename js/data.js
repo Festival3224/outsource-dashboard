@@ -79,3 +79,13 @@ export function seedCurrentMonthData() {
 
   saveData();
 }
+
+export function deleteEmployee(employeeId) {
+  const monthData = getCurrentMonthData();
+
+  monthData.employees = monthData.employees.filter((employee) => (
+    employee.id !== employeeId
+  ));
+
+  saveData();
+}
