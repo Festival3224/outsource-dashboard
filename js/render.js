@@ -34,6 +34,10 @@ function getAge(dateOfBirth) {
   return age;
 }
 
+function formatCurrency(value) {
+  return `€${Number(value).toFixed(2)}`;
+}
+
 export function renderMonthSelect() {
   const monthSelect = document.querySelector('#month-select');
 
@@ -75,7 +79,9 @@ function renderEmployeesTable(employees) {
           <th>Age</th>
           <th>Position</th>
           <th>Salary</th>
+          <th>Estimated Payment</th>
           <th>Project</th>
+          <th>Projected Income</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -87,12 +93,14 @@ function renderEmployeesTable(employees) {
             <td>${employee.surname}</td>
             <td>${getAge(employee.dateOfBirth)}</td>
             <td>${employee.position}</td>
-            <td>€${employee.salary.toFixed(2)}</td>
+            <td>${formatCurrency(employee.salary)}</td>
+            <td>${formatCurrency(0)}</td>
             <td>
               <button class="table-button">
                 Show Assignments (${employee.assignments.length})
               </button>
             </td>
+            <td>${formatCurrency(0)}</td>
             <td>
               <button class="table-button danger">
                 Delete
@@ -105,12 +113,47 @@ function renderEmployeesTable(employees) {
   `;
 }
 
-function renderProjectsPlaceholder(projects) {
+function renderProjectsTable(projects) {
+  if (projects.length === 0) {
+    return '<p>No projects yet.</p>';
+  }
+
   return `
-    <p>
-      Projects: <strong>${projects.length}</strong>
-    </p>
-    <p>Projects table will be added in the next stage.</p>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Company Name</th>
+          <th>Project Name</th>
+          <th>Budget</th>
+          <th>Employee Capacity</th>
+          <th>Employees</th>
+          <th>Estimated Income</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        ${projects.map((project) => `
+          <tr>
+            <td>${project.companyName}</td>
+            <td>${project.projectName}</td>
+            <td>${formatCurrency(project.budget)}</td>
+            <td>0/${project.capacity}</td>
+            <td>
+              <button class="table-button">
+                Show Employees (0)
+              </button>
+            </td>
+            <td>${formatCurrency(0)}</td>
+            <td>
+              <button class="table-button danger">
+                Delete
+              </button>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
   `;
 }
 
@@ -118,22 +161,31 @@ export function renderContent() {
   const content = document.querySelector('#content');
   const monthData = getCurrentMonthData();
 
-  const contentByView = state.currentView === 'employees'
+  const title = state.currentView === 'projects' ? 'Projects' : 'Employees';
+  const addButtonText = state.currentView === 'projects'
+    ? '+ Add Project'
+    : '+ Add Employee';
+
+  const table = state.currentView === 'employees'
     ? renderEmployeesTable(monthData.employees)
-    : renderProjectsPlaceholder(monthData.projects);
+    : renderProjectsTable(monthData.projects);
 
   content.innerHTML = `
     <div class="content-header">
       <div>
-        <h2>${state.currentView === 'projects' ? 'Projects' : 'Employees'}</h2>
+        <h2>${title}</h2>
         <p>
           Current period:
           <strong>${MONTHS[state.currentMonth]} ${state.currentYear}</strong>
         </p>
       </div>
+
+      <button class="primary-button">
+        ${addButtonText}
+      </button>
     </div>
 
-    ${contentByView}
+    ${table}
   `;
 }
 
