@@ -106,3 +106,27 @@ export function addEmployee(employeeData) {
 
   saveData();
 }
+
+export function addProject(projectData) {
+  const monthData = getCurrentMonthData();
+
+  monthData.projects.push({
+    id: crypto.randomUUID(),
+    companyName: projectData.companyName,
+    projectName: projectData.projectName,
+    budget: Number(projectData.budget),
+    capacity: Number(projectData.capacity),
+  });
+
+  saveData();
+}
+
+export function deleteProject(projectId) {
+  const monthData = getCurrentMonthData();
+
+  monthData.projects = monthData.projects.filter((project) => (
+    project.id !== projectId
+  ));
+
+  saveData();
+}

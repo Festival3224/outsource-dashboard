@@ -146,7 +146,7 @@ function renderProjectsTable(projects) {
             </td>
             <td>${formatCurrency(0)}</td>
             <td>
-              <button class="table-button danger">
+              <button class="table-button danger" data-delete-project-id="${project.id}">
                 Delete
               </button>
             </td>
@@ -170,6 +170,10 @@ export function renderContent() {
     ? renderEmployeesTable(monthData.employees)
     : renderProjectsTable(monthData.projects);
 
+  const addButtonAttribute = state.currentView === 'projects'
+    ? 'data-add-project'
+    : 'data-add-employee';  
+
   content.innerHTML = `
     <div class="content-header">
       <div>
@@ -180,7 +184,7 @@ export function renderContent() {
         </p>
       </div>
 
-      <button class="primary-button" data-add-employee>
+      <button class="primary-button" ${addButtonAttribute}>
         ${addButtonText}
       </button>
     </div>

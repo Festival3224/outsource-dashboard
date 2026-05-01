@@ -10,6 +10,8 @@ import {
   seedCurrentMonthData,
   deleteEmployee,
   addEmployee,
+  addProject,
+  deleteProject,
 } from './data.js';
 
 import { renderApp } from './render.js';
@@ -36,7 +38,14 @@ function initEventListeners() {
   const employeeFormCancel = document.querySelector('#employee-form-cancel');
   const employeeSubmit = document.querySelector('#employee-submit');
 
-  const touchedFields = new Set();
+  const projectModal = document.querySelector('#project-modal');
+  const projectForm = document.querySelector('#project-form');
+  const projectModalClose = document.querySelector('#project-modal-close');
+  const projectFormCancel = document.querySelector('#project-form-cancel');
+  const projectSubmit = document.querySelector('#project-submit');
+
+  const touchedEmployeeFields = new Set();
+  const touchedProjectFields = new Set();
 
   function getEmployeeFormData() {
     const formData = new FormData(employeeForm);
@@ -50,34 +59,45 @@ function initEventListeners() {
     };
   }
 
+  function getProjectFormData() {
+    const formData = new FormData(projectForm);
+
+    return {
+      projectName: formData.get('projectName').trim(),
+      companyName: formData.get('companyName').trim(),
+      budget: formData.get('budget'),
+      capacity: formData.get('capacity'),
+    };
+  }
+
   function validateEmployeeForm(showAllErrors = false) {
-    const formData = getEmployeeFormData();
+    const data = getEmployeeFormData();
     const errors = {};
     const nameRegex = /^[A-Za-zА-Яа-яЁё]+$/;
 
-    if (formData.name.length < 3 || !nameRegex.test(formData.name)) {
+    if (data.name.length < 3 || !nameRegex.test(data.name)) {
       errors.name = 'Name must be at least 3 characters and contain only letters';
     }
 
-    if (formData.surname.length < 3 || !nameRegex.test(formData.surname)) {
+    if (data.surname.length < 3 || !nameRegex.test(data.surname)) {
       errors.surname = 'Surname must be at least 3 characters and contain only letters';
     }
 
-    if (!formData.dateOfBirth) {
+    if (!data.dateOfBirth) {
       errors.dateOfBirth = 'Date of Birth is required';
     }
 
-    if (!formData.position) {
+    if (!data.position) {
       errors.position = 'Position is required';
     }
 
-    if (!formData.salary || Number(formData.salary) <= 0) {
+    if (!data.salary || Number(data.salary) <= 0) {
       errors.salary = 'Salary must be greater than 0';
     }
 
     employeeForm.querySelectorAll('[data-error]').forEach((errorElement) => {
       const fieldName = errorElement.dataset.error;
-      const shouldShowError = showAllErrors || touchedFields.has(fieldName);
+      const shouldShowError = showAllErrors || touchedEmployeeFields.has(fieldName);
 
       errorElement.textContent = shouldShowError ? errors[fieldName] || '' : '';
     });
@@ -87,24 +107,82 @@ function initEventListeners() {
     return Object.keys(errors).length === 0;
   }
 
+  function validateProjectForm(showAllErrors = false) {
+    const data = getProjectFormData();
+    const errors = {};
+
+    if (data.projectName.length < 3) {
+      errors.projectName = 'Project name must be at least 3 characters';
+    }
+
+    if (data.companyName.length < 2) {
+      errors.companyName = 'Company name must be at least 2 characters';
+    }
+
+    if (!data.budget || Number(data.budget) <= 0) {
+      errors.budget = 'Budget must be greater than 0';
+    }
+
+    if (!data.capacity || Number(data.capacity) < 1) {
+      errors.capacity = 'Capacity must be at least 1';
+    }
+
+    projectForm.querySelectorAll('[data-error]').forEach((errorElement) => {
+      const fieldName = errorElement.dataset.error;
+      const shouldShowError = showAllErrors || touchedProjectFields.has(fieldName);
+
+      errorElement.textContent = shouldShowError ? errors[fieldName] || '' : '';
+    });
+
+    projectSubmit.disabled = Object.keys(errors).length > 0;
+
+    return Object.keys(errors).length === 0;
+  }
+
   function closeEmployeePanel() {
     employeeModal.classList.add('hidden');
     employeeForm.reset();
-    touchedFields.clear();
+    touchedEmployeeFields.clear();
     validateEmployeeForm();
+  }
+
+  function closeProjectPanel() {
+    projectModal.classList.add('hidden');
+    projectForm.reset();
+    touchedProjectFields.clear();
+    validateProjectForm();
   }
 
   content.addEventListener('click', (event) => {
     const deleteButton = event.target.closest('[data-delete-employee-id]');
+    const deleteProjectButton = event.target.closest('[data-delete-project-id]');
     const addEmployeeButton = event.target.closest('[data-add-employee]');
+    const addProjectButton = event.target.closest('[data-add-project]');
 
     if (addEmployeeButton && state.currentView === 'employees') {
-      touchedFields.clear();
+      touchedEmployeeFields.clear();
       employeeForm.reset();
       validateEmployeeForm();
       employeeModal.classList.remove('hidden');
       return;
     }
+
+    if (addProjectButton && state.currentView === 'projects') {
+      touchedProjectFields.clear();
+      projectForm.reset();
+      validateProjectForm();
+      projectModal.classList.remove('hidden');
+      return;
+    }
+
+      if (deleteProjectButton) {
+          const projectId = deleteProjectButton.dataset.deleteProjectId;
+
+          deleteProject(projectId);
+          renderApp();
+          return;
+      }
+
 
     if (!deleteButton) {
       return;
@@ -121,28 +199,27 @@ function initEventListeners() {
 
   employeeModal.addEventListener('click', (event) => {
     if (event.target === employeeModal) {
-        event.stopPropagation();
+      event.stopPropagation();
     }
   });
 
-  employeeForm.addEventListener('input', (event) => {
-    // touchedFields.add(event.target.name);
+  employeeForm.addEventListener('input', () => {
     validateEmployeeForm();
   });
 
   employeeForm.addEventListener('blur', (event) => {
-    touchedFields.add(event.target.name);
+    touchedEmployeeFields.add(event.target.name);
     validateEmployeeForm();
   }, true);
 
   employeeForm.addEventListener('change', (event) => {
-    touchedFields.add(event.target.name);
+    touchedEmployeeFields.add(event.target.name);
     validateEmployeeForm();
   });
 
   employeeForm.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
-        event.preventDefault();
+      event.preventDefault();
     }
   });
 
@@ -153,10 +230,49 @@ function initEventListeners() {
       return;
     }
 
-    const formData = getEmployeeFormData();
-
-    addEmployee(formData);
+    addEmployee(getEmployeeFormData());
     closeEmployeePanel();
+    renderApp();
+  });
+
+  projectModalClose.addEventListener('click', closeProjectPanel);
+  projectFormCancel.addEventListener('click', closeProjectPanel);
+
+  projectModal.addEventListener('click', (event) => {
+    if (event.target === projectModal) {
+      event.stopPropagation();
+    }
+  });
+
+  projectForm.addEventListener('input', () => {
+    validateProjectForm();
+  });
+
+  projectForm.addEventListener('blur', (event) => {
+    touchedProjectFields.add(event.target.name);
+    validateProjectForm();
+  }, true);
+
+  projectForm.addEventListener('change', (event) => {
+    touchedProjectFields.add(event.target.name);
+    validateProjectForm();
+  });
+
+  projectForm.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+    }
+  });
+
+  projectForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    if (!validateProjectForm(true)) {
+      return;
+    }
+
+    addProject(getProjectFormData());
+    closeProjectPanel();
     renderApp();
   });
 

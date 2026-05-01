@@ -30,7 +30,7 @@
     </main>
   </div>
 
-  <!-- MODAL -->
+  <!-- EMPLOYEE PANEL -->
   <div class="modal hidden" id="employee-modal">
   <div class="modal-content">
     <div class="modal-header">
@@ -82,6 +82,51 @@
           Cancel
         </button>
         <button type="submit" class="primary-button" id="employee-submit" disabled>
+          Save
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- PROJECT PANEL -->
+<div class="modal hidden" id="project-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Add New Project</h2>
+      <button class="modal-close" id="project-modal-close">×</button>
+    </div>
+
+    <form id="project-form" class="form">
+      <label>
+        Project Name: *
+        <input type="text" name="projectName" required>
+        <span class="error-message" data-error="projectName"></span>
+      </label>
+
+      <label>
+        Company Name: *
+        <input type="text" name="companyName" required>
+        <span class="error-message" data-error="companyName"></span>
+      </label>
+
+      <label>
+        Budget: *
+        <input type="number" name="budget" min="0" step="0.01" required>
+        <span class="error-message" data-error="budget"></span>
+      </label>
+
+      <label>
+        Employee Capacity: *
+        <input type="number" name="capacity" min="1" step="1" required>
+        <span class="error-message" data-error="capacity"></span>
+      </label>
+
+      <div class="form-actions">
+        <button type="button" class="secondary-button" id="project-form-cancel">
+          Cancel
+        </button>
+        <button type="submit" class="primary-button" id="project-submit" disabled>
           Save
         </button>
       </div>
