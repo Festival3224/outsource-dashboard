@@ -134,5 +134,42 @@
   </div>
 </div>
 
+<!-- PROJECT EMPLOYEES MODAL -->
+<div class="center-modal hidden" id="project-employees-modal">
+  <div class="center-modal-content">
+    <div class="center-modal-header">
+      <h2 id="project-employees-title">Employees on Project</h2>
+      <button class="modal-close" id="project-employees-close">×</button>
+    </div>
+
+    <div id="project-employees-body"></div>
+  </div>
+</div>
+
+ <!-- ASSIGN  -->
+<div class="assign-popup hidden" id="assign-popup">
+  <div class="assign-popup-header">
+    <h2 id="assign-popup-title">Assign Employee</h2>
+  </div>
+
+  <div class="assign-popup-info" id="assign-popup-info"></div>
+
+  <form id="assign-form" class="form">
+    <label>
+      Select Project:
+      <select name="projectId" id="assign-project-select" required></select>
+    </label>
+
+    <div class="form-actions">
+      <button type="submit" class="primary-button" id="assign-submit" disabled>
+        Assign
+      </button>
+      <button type="button" class="secondary-button" id="assign-cancel">
+        Cancel
+      </button>
+    </div>
+  </form>
+</div>
+
 </body>
 </html>

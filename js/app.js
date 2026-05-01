@@ -12,6 +12,8 @@ import {
   addEmployee,
   addProject,
   deleteProject,
+  assignEmployeeToProject,
+  unassignEmployeeFromProject,
 } from './data.js';
 
 import { renderApp } from './render.js';
@@ -44,8 +46,27 @@ function initEventListeners() {
   const projectFormCancel = document.querySelector('#project-form-cancel');
   const projectSubmit = document.querySelector('#project-submit');
 
+  const projectEmployeesModal = document.querySelector('#project-employees-modal');
+  const projectEmployeesClose = document.querySelector('#project-employees-close');
+  const projectEmployeesTitle = document.querySelector('#project-employees-title');
+  const projectEmployeesBody = document.querySelector('#project-employees-body');
+
+  const assignPopup = document.querySelector('#assign-popup');
+  const assignForm = document.querySelector('#assign-form');
+  const assignPopupTitle = document.querySelector('#assign-popup-title');
+  const assignPopupInfo = document.querySelector('#assign-popup-info');
+  const assignProjectSelect = document.querySelector('#assign-project-select');
+  const assignSubmit = document.querySelector('#assign-submit');
+  const assignCancel = document.querySelector('#assign-cancel');
+
   const touchedEmployeeFields = new Set();
   const touchedProjectFields = new Set();
+
+  function getEmployeeCapacity(employee) {
+    return employee.assignments.reduce((sum, assignment) => (
+      sum + Number(assignment.capacity || 0)
+    ), 0);
+  }
 
   function getEmployeeFormData() {
     const formData = new FormData(employeeForm);
@@ -153,11 +174,134 @@ function initEventListeners() {
     validateProjectForm();
   }
 
+  function closeProjectEmployeesModal() {
+    projectEmployeesModal.classList.add('hidden');
+    projectEmployeesTitle.textContent = 'Employees on Project';
+    projectEmployeesBody.innerHTML = '';
+  }
+
+  function openProjectEmployeesModal(projectId) {
+    const monthData = getCurrentMonthData();
+    const project = monthData.projects.find((item) => item.id === projectId);
+
+    if (!project) {
+      return;
+    }
+
+    const assignedEmployees = monthData.employees.filter((employee) => (
+      employee.assignments.some((assignment) => assignment.projectId === projectId)
+    ));
+
+    projectEmployeesTitle.textContent = `Employees on ${project.projectName}`;
+
+    if (assignedEmployees.length === 0) {
+      projectEmployeesBody.innerHTML = '<p>No employees assigned to this project yet.</p>';
+    } else {
+      projectEmployeesBody.innerHTML = `
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Capacity</th>
+              <th>Fit</th>
+              <th>Vacation</th>
+              <th>Effective</th>
+              <th>Revenue</th>
+              <th>Cost</th>
+              <th>Profit</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            ${assignedEmployees.map((employee) => {
+              const assignment = employee.assignments.find((item) => (
+                item.projectId === projectId
+              ));
+
+              return `
+                <tr>
+                  <td>${employee.name} ${employee.surname}</td>
+                  <td>${assignment.capacity ?? '-'}</td>
+                  <td>${assignment.fit ?? '-'}</td>
+                  <td>-</td>
+                  <td>-</td>
+                  <td>€0.00</td>
+                  <td>€0.00</td>
+                  <td>€0.00</td>
+                  <td>
+                    <button class="table-button">Edit</button>
+                    <button
+                        class="table-button danger"
+                        data-unassign-employee-id="${employee.id}"
+                        data-unassign-project-id="${projectId}"
+                    >
+                        Unassign
+                    </button>
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    projectEmployeesModal.classList.remove('hidden');
+  }
+
+  function closeAssignPopup() {
+    assignPopup.classList.add('hidden');
+    assignForm.reset();
+    assignSubmit.disabled = true;
+  }
+
+  function openAssignPopup(employeeId, buttonElement) {
+    const monthData = getCurrentMonthData();
+    const employee = monthData.employees.find((item) => item.id === employeeId);
+
+    if (!employee) {
+      return;
+    }
+
+    const currentCapacity = getEmployeeCapacity(employee);
+    const availableCapacity = 1.5 - currentCapacity;
+
+    assignForm.dataset.employeeId = employeeId;
+
+    assignPopupTitle.textContent = `Assign ${employee.name} ${employee.surname}`;
+
+    assignPopupInfo.innerHTML = `
+      <p><strong>Current Capacity:</strong> ${currentCapacity.toFixed(1)} / 1.5</p>
+      <p><strong>Available:</strong> ${availableCapacity.toFixed(1)}</p>
+    `;
+
+    assignProjectSelect.innerHTML = `
+      <option value="">Select a project</option>
+      ${monthData.projects.map((project) => `
+        <option value="${project.id}">
+          ${project.projectName}
+        </option>
+      `).join('')}
+    `;
+
+    assignSubmit.disabled = true;
+
+    const rect = buttonElement.getBoundingClientRect();
+
+    assignPopup.style.top = `${rect.bottom + window.scrollY + 8}px`;
+    assignPopup.style.left = `${rect.left + window.scrollX - 260}px`;
+
+    assignPopup.classList.remove('hidden');
+  }
+
   content.addEventListener('click', (event) => {
-    const deleteButton = event.target.closest('[data-delete-employee-id]');
+    const deleteEmployeeButton = event.target.closest('[data-delete-employee-id]');
     const deleteProjectButton = event.target.closest('[data-delete-project-id]');
     const addEmployeeButton = event.target.closest('[data-add-employee]');
     const addProjectButton = event.target.closest('[data-add-project]');
+    const showProjectEmployeesButton = event.target.closest('[data-show-project-employees-id]');
+    const assignEmployeeButton = event.target.closest('[data-assign-employee-id]');
 
     if (addEmployeeButton && state.currentView === 'employees') {
       touchedEmployeeFields.clear();
@@ -175,23 +319,26 @@ function initEventListeners() {
       return;
     }
 
-      if (deleteProjectButton) {
-          const projectId = deleteProjectButton.dataset.deleteProjectId;
-
-          deleteProject(projectId);
-          renderApp();
-          return;
-      }
-
-
-    if (!deleteButton) {
+    if (showProjectEmployeesButton) {
+      openProjectEmployeesModal(showProjectEmployeesButton.dataset.showProjectEmployeesId);
       return;
     }
 
-    const employeeId = deleteButton.dataset.deleteEmployeeId;
+    if (assignEmployeeButton) {
+      openAssignPopup(assignEmployeeButton.dataset.assignEmployeeId, assignEmployeeButton);
+      return;
+    }
 
-    deleteEmployee(employeeId);
-    renderApp();
+    if (deleteProjectButton) {
+      deleteProject(deleteProjectButton.dataset.deleteProjectId);
+      renderApp();
+      return;
+    }
+
+    if (deleteEmployeeButton) {
+      deleteEmployee(deleteEmployeeButton.dataset.deleteEmployeeId);
+      renderApp();
+    }
   });
 
   employeeModalClose.addEventListener('click', closeEmployeePanel);
@@ -203,9 +350,7 @@ function initEventListeners() {
     }
   });
 
-  employeeForm.addEventListener('input', () => {
-    validateEmployeeForm();
-  });
+  employeeForm.addEventListener('input', validateEmployeeForm);
 
   employeeForm.addEventListener('blur', (event) => {
     touchedEmployeeFields.add(event.target.name);
@@ -244,9 +389,7 @@ function initEventListeners() {
     }
   });
 
-  projectForm.addEventListener('input', () => {
-    validateProjectForm();
-  });
+  projectForm.addEventListener('input', validateProjectForm);
 
   projectForm.addEventListener('blur', (event) => {
     touchedProjectFields.add(event.target.name);
@@ -273,6 +416,57 @@ function initEventListeners() {
 
     addProject(getProjectFormData());
     closeProjectPanel();
+    renderApp();
+  });
+
+  projectEmployeesClose.addEventListener('click', closeProjectEmployeesModal);
+
+  projectEmployeesModal.addEventListener('click', (event) => {
+    if (event.target === projectEmployeesModal) {
+      event.stopPropagation();
+    }
+  });
+
+  projectEmployeesBody.addEventListener('click', (event) => {
+    const unassignButton = event.target.closest('[data-unassign-employee-id]');
+
+    if (!unassignButton) {
+        return;
+    }
+
+    const employeeId = unassignButton.dataset.unassignEmployeeId;
+    const projectId = unassignButton.dataset.unassignProjectId;
+
+    unassignEmployeeFromProject(employeeId, projectId);
+    openProjectEmployeesModal(projectId);
+    renderApp();
+  });
+
+  assignProjectSelect.addEventListener('change', () => {
+    assignSubmit.disabled = !assignProjectSelect.value;
+  });
+
+  assignCancel.addEventListener('click', closeAssignPopup);
+
+  assignForm.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+    }
+  });
+
+  assignForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    const employeeId = assignForm.dataset.employeeId;
+    const projectId = assignProjectSelect.value;
+
+    if (!employeeId || !projectId) {
+        return;
+    }
+
+    assignEmployeeToProject(employeeId, projectId);
+
+    closeAssignPopup();
     renderApp();
   });
 

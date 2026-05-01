@@ -96,12 +96,16 @@ function renderEmployeesTable(employees) {
             <td>${formatCurrency(employee.salary)}</td>
             <td>${formatCurrency(0)}</td>
             <td>
-              <button class="table-button">
+              <button class="table-button info-button">
                 Show Assignments (${employee.assignments.length})
               </button>
             </td>
             <td>${formatCurrency(0)}</td>
             <td>
+              <button class="table-button assign-button" data-assign-employee-id="${employee.id}">
+                Assign
+              </button>
+
               <button class="table-button danger" data-delete-employee-id="${employee.id}">
                 Delete
               </button>
@@ -133,15 +137,21 @@ function renderProjectsTable(projects) {
       </thead>
 
       <tbody>
-        ${projects.map((project) => `
+       ${projects.map((project) => {
+           const monthData = getCurrentMonthData();
+           const assignedEmployeesCount = monthData.employees.filter((employee) => (
+               employee.assignments.some((assignment) => assignment.projectId === project.id)
+           )).length;
+
+           return `
           <tr>
             <td>${project.companyName}</td>
             <td>${project.projectName}</td>
             <td>${formatCurrency(project.budget)}</td>
             <td>0/${project.capacity}</td>
             <td>
-              <button class="table-button">
-                Show Employees (0)
+              <button class="table-button info-button" data-show-project-employees-id="${project.id}">
+                 Show Employees (${assignedEmployeesCount})
               </button>
             </td>
             <td>${formatCurrency(0)}</td>
@@ -151,7 +161,8 @@ function renderProjectsTable(projects) {
               </button>
             </td>
           </tr>
-        `).join('')}
+        `;
+       }).join('')}
       </tbody>
     </table>
   `;

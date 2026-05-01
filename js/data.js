@@ -130,3 +130,43 @@ export function deleteProject(projectId) {
 
   saveData();
 }
+
+export function assignEmployeeToProject(employeeId, projectId) {
+  const monthData = getCurrentMonthData();
+  const employee = monthData.employees.find((item) => item.id === employeeId);
+
+  if (!employee) {
+    return;
+  }
+
+  const alreadyAssigned = employee.assignments.some((assignment) => (
+    assignment.projectId === projectId
+  ));
+
+  if (alreadyAssigned) {
+    return;
+  }
+
+  employee.assignments.push({
+    projectId,
+    capacity: 1,
+    fit: 1,
+  });
+
+  saveData();
+}
+
+export function unassignEmployeeFromProject(employeeId, projectId) {
+  const monthData = getCurrentMonthData();
+  const employee = monthData.employees.find((item) => item.id === employeeId);
+
+  if (!employee) {
+    return;
+  }
+
+  employee.assignments = employee.assignments.filter((assignment) => (
+    assignment.projectId !== projectId
+  ));
+
+  saveData();
+}
