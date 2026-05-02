@@ -14,6 +14,7 @@ import {
   deleteProject,
   assignEmployeeToProject,
   unassignEmployeeFromProject,
+  updateEmployeeAssignment,
 } from './data.js';
 
 import { renderApp } from './render.js';
@@ -63,6 +64,12 @@ function initEventListeners() {
   const assignProjectSelect = document.querySelector('#assign-project-select');
   const assignSubmit = document.querySelector('#assign-submit');
   const assignCancel = document.querySelector('#assign-cancel');
+
+  const editAssignmentPopup = document.querySelector('#edit-assignment-popup');
+  const editAssignmentForm = document.querySelector('#edit-assignment-form');
+  const editAssignmentTitle = document.querySelector('#edit-assignment-title');
+  const editAssignmentInfo = document.querySelector('#edit-assignment-info');
+  const editAssignmentCancel = document.querySelector('#edit-assignment-cancel');
 
   const touchedEmployeeFields = new Set();
   const touchedProjectFields = new Set();
@@ -246,7 +253,14 @@ function initEventListeners() {
                   <td>€0.00</td>
                   <td>€0.00</td>
                   <td>
-                    <button class="table-button">Edit</button>
+                    <button
+                       class="table-button"
+                       data-edit-assignment-employee-id="${employee.id}"
+                       data-edit-assignment-project-id="${projectId}" 
+                    >
+                      Edit
+                    </button>
+
                     <button
                         class="table-button danger"
                         data-unassign-employee-id="${employee.id}"
@@ -314,6 +328,14 @@ function openEmployeeAssignmentsModal(employeeId) {
                 <td>${assignment.fit ?? '-'}</td>
                 <td>
                   <button
+                    class="table-button"
+                    data-edit-assignment-employee-id="${employee.id}"
+                    data-edit-assignment-project-id="${assignment.projectId}"
+                  >
+                    Edit
+                  </button>
+
+                  <button
                     class="table-button danger"
                     data-unassign-employee-id="${employee.id}"
                     data-unassign-project-id="${assignment.projectId}"
@@ -377,6 +399,52 @@ function openEmployeeAssignmentsModal(employeeId) {
 
     assignPopup.classList.remove('hidden');
   }
+
+
+function closeEditAssignmentPopup() {
+  editAssignmentPopup.classList.add('hidden');
+  editAssignmentForm.reset();
+  delete editAssignmentForm.dataset.employeeId;
+  delete editAssignmentForm.dataset.projectId;
+}
+
+function openEditAssignmentPopup(employeeId, projectId, buttonElement) {
+  const monthData = getCurrentMonthData();
+  const employee = monthData.employees.find((item) => item.id === employeeId);
+  const project = monthData.projects.find((item) => item.id === projectId);
+
+  if (!employee || !project) {
+    return;
+  }
+
+  const assignment = employee.assignments.find((item) => (
+    item.projectId === projectId
+  ));
+
+  if (!assignment) {
+    return;
+  }
+
+  editAssignmentForm.dataset.employeeId = employeeId;
+  editAssignmentForm.dataset.projectId = projectId;
+
+  editAssignmentTitle.textContent = `Edit ${employee.name} ${employee.surname}`;
+  editAssignmentInfo.innerHTML = `
+    <p><strong>Project:</strong> ${project.projectName}</p>
+    <p><strong>Company:</strong> ${project.companyName}</p>
+  `;
+
+  editAssignmentForm.elements.capacity.value = assignment.capacity;
+  editAssignmentForm.elements.fit.value = assignment.fit;
+
+  const rect = buttonElement.getBoundingClientRect();
+
+  editAssignmentPopup.style.top = `${rect.bottom + window.scrollY + 8}px`;
+  editAssignmentPopup.style.left = `${rect.left + window.scrollX - 260}px`;
+
+  editAssignmentPopup.classList.remove('hidden');
+}
+
 
   content.addEventListener('click', (event) => {
     const deleteEmployeeButton = event.target.closest('[data-delete-employee-id]');
@@ -525,10 +593,21 @@ function openEmployeeAssignmentsModal(employeeId) {
   });
 
   projectEmployeesBody.addEventListener('click', (event) => {
+    const editButton = event.target.closest('[data-edit-assignment-employee-id]');
+
+    if (editButton) {
+      openEditAssignmentPopup(
+        editButton.dataset.editAssignmentEmployeeId,
+        editButton.dataset.editAssignmentProjectId,
+        editButton
+      );
+      return;
+    }
+
     const unassignButton = event.target.closest('[data-unassign-employee-id]');
 
     if (!unassignButton) {
-        return;
+      return;
     }
 
     const employeeId = unassignButton.dataset.unassignEmployeeId;
@@ -540,6 +619,17 @@ function openEmployeeAssignmentsModal(employeeId) {
   });
 
   employeeAssignmentsBody.addEventListener('click', (event) => {
+    const editButton = event.target.closest('[data-edit-assignment-employee-id]');
+
+    if (editButton) {
+      openEditAssignmentPopup(
+        editButton.dataset.editAssignmentEmployeeId,
+        editButton.dataset.editAssignmentProjectId,
+        editButton
+      );
+      return;
+    }
+
     const unassignButton = event.target.closest('[data-unassign-employee-id]');
 
     if (!unassignButton) {
@@ -581,6 +671,52 @@ function openEmployeeAssignmentsModal(employeeId) {
     closeAssignPopup();
     renderApp();
   });
+
+
+  editAssignmentCancel.addEventListener('click', closeEditAssignmentPopup);
+
+  editAssignmentForm.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+    }
+  });
+
+  editAssignmentForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+
+    const employeeId = editAssignmentForm.dataset.employeeId;
+    const projectId = editAssignmentForm.dataset.projectId;
+
+    const formData = new FormData(editAssignmentForm);
+    const capacity = Number(formData.get('capacity'));
+    const fit = Number(formData.get('fit'));
+
+    if (!employeeId || !projectId) {
+      return;
+    }
+
+    if (capacity <= 0 || capacity > 1.5 || fit < 0 || fit > 1) {
+      return;
+    }
+
+    updateEmployeeAssignment(employeeId, projectId, {
+      capacity,
+      fit,
+    });
+
+    closeEditAssignmentPopup();
+
+    if (!projectEmployeesModal.classList.contains('hidden')) {
+      openProjectEmployeesModal(projectId);
+    }
+
+    if (!employeeAssignmentsModal.classList.contains('hidden')) {
+      openEmployeeAssignmentsModal(employeeId);
+    }
+
+    renderApp();
+  });
+
 
   monthSelect.addEventListener('change', (event) => {
     state.currentMonth = Number(event.target.value);

@@ -170,3 +170,25 @@ export function unassignEmployeeFromProject(employeeId, projectId) {
 
   saveData();
 }
+
+export function updateEmployeeAssignment(employeeId, projectId, assignmentData) {
+  const monthData = getCurrentMonthData();
+  const employee = monthData.employees.find((item) => item.id === employeeId);
+
+  if (!employee) {
+    return;
+  }
+
+  const assignment = employee.assignments.find((item) => (
+    item.projectId === projectId
+  ));
+
+  if (!assignment) {
+    return;
+  }
+
+  assignment.capacity = Number(assignmentData.capacity);
+  assignment.fit = Number(assignmentData.fit);
+
+  saveData();
+}
