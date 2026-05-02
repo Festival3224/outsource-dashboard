@@ -96,7 +96,10 @@ function renderEmployeesTable(employees) {
             <td>${formatCurrency(employee.salary)}</td>
             <td>${formatCurrency(0)}</td>
             <td>
-              <button class="table-button info-button">
+              <button
+                class="table-button info-button"
+                data-show-employee-assignments-id="${employee.id}"
+              >
                 Show Assignments (${employee.assignments.length})
               </button>
             </td>
