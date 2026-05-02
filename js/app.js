@@ -19,6 +19,13 @@ import {
 
 import { renderApp } from './render.js';
 
+import {
+  MAX_EMPLOYEE_CAPACITY,
+  getEmployeeCapacity,
+  getAssignmentEffectiveCapacity,
+  formatCapacity,
+} from './calculations.js';
+
 function setActiveTab() {
   const projectsTab = document.querySelector('#projects-tab');
   const employeesTab = document.querySelector('#employees-tab');
@@ -74,11 +81,11 @@ function initEventListeners() {
   const touchedEmployeeFields = new Set();
   const touchedProjectFields = new Set();
 
-  function getEmployeeCapacity(employee) {
+  /* function getEmployeeCapacity(employee) {
     return employee.assignments.reduce((sum, assignment) => (
       sum + Number(assignment.capacity || 0)
     ), 0);
-  }
+  } */
 
   function getEmployeeFormData() {
     const formData = new FormData(employeeForm);
@@ -242,13 +249,15 @@ function initEventListeners() {
                 item.projectId === projectId
               ));
 
+              const effectiveCapacity = getAssignmentEffectiveCapacity(assignment);
+
               return `
                 <tr>
                   <td>${employee.name} ${employee.surname}</td>
                   <td>${assignment.capacity ?? '-'}</td>
                   <td>${assignment.fit ?? '-'}</td>
                   <td>-</td>
-                  <td>-</td>
+                  <td>${formatCapacity(effectiveCapacity)}</td>
                   <td>€0.00</td>
                   <td>€0.00</td>
                   <td>€0.00</td>
@@ -310,6 +319,7 @@ function openEmployeeAssignmentsModal(employeeId) {
             <th>Company</th>
             <th>Capacity</th>
             <th>Fit</th>
+            <th>Effective</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -320,12 +330,15 @@ function openEmployeeAssignmentsModal(employeeId) {
               item.id === assignment.projectId
             ));
 
+            const effectiveCapacity = getAssignmentEffectiveCapacity(assignment);
+
             return `
               <tr>
                 <td>${project?.projectName ?? 'Deleted project'}</td>
                 <td>${project?.companyName ?? '-'}</td>
                 <td>${assignment.capacity ?? '-'}</td>
                 <td>${assignment.fit ?? '-'}</td>
+                <td>${formatCapacity(effectiveCapacity)}</td>
                 <td>
                   <button
                     class="table-button"
@@ -370,15 +383,21 @@ function openEmployeeAssignmentsModal(employeeId) {
     }
 
     const currentCapacity = getEmployeeCapacity(employee);
-    const availableCapacity = 1.5 - currentCapacity;
+    const availableCapacity = MAX_EMPLOYEE_CAPACITY - currentCapacity;
 
     assignForm.dataset.employeeId = employeeId;
 
     assignPopupTitle.textContent = `Assign ${employee.name} ${employee.surname}`;
 
     assignPopupInfo.innerHTML = `
-      <p><strong>Current Capacity:</strong> ${currentCapacity.toFixed(1)} / 1.5</p>
-      <p><strong>Available:</strong> ${availableCapacity.toFixed(1)}</p>
+      <p>
+        <strong>Current Capacity:</strong>
+        ${formatCapacity(currentCapacity)} / ${formatCapacity(MAX_EMPLOYEE_CAPACITY)}
+      </p>
+      <p>
+        <strong>Available:</strong>
+        ${formatCapacity(availableCapacity)}
+      </p>
     `;
 
     assignProjectSelect.innerHTML = `
