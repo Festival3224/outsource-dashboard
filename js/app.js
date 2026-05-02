@@ -96,6 +96,12 @@ function initEventListeners() {
     };
   }
 
+  function resetForm(form, touchedFields, validateForm) {
+    form.reset();
+    touchedFields.clear();
+    validateForm();
+  }
+
   function validateEmployeeForm(showAllErrors = false) {
     const data = getEmployeeFormData();
     const errors = {};
@@ -167,22 +173,27 @@ function initEventListeners() {
 
   function closeEmployeePanel() {
     employeeModal.classList.add('hidden');
-    employeeForm.reset();
-    touchedEmployeeFields.clear();
-    validateEmployeeForm();
+    resetForm(employeeForm, touchedEmployeeFields, validateEmployeeForm);
   }
 
   function closeProjectPanel() {
     projectModal.classList.add('hidden');
-    projectForm.reset();
-    touchedProjectFields.clear();
-    validateProjectForm();
+    resetForm(projectForm, touchedProjectFields, validateProjectForm);
+  }
+
+  function closeInfoModal(modal, titleElement, defaultTitle, bodyElement) {
+    modal.classList.add('hidden');
+    titleElement.textContent = defaultTitle;
+    bodyElement.innerHTML = '';
   }
 
   function closeProjectEmployeesModal() {
-    projectEmployeesModal.classList.add('hidden');
-    projectEmployeesTitle.textContent = 'Employees on Project';
-    projectEmployeesBody.innerHTML = '';
+    closeInfoModal(
+      projectEmployeesModal,
+      projectEmployeesTitle,
+      'Employees on Project',
+      projectEmployeesBody
+    );
   }
 
   function openProjectEmployeesModal(projectId) {
@@ -256,9 +267,12 @@ function initEventListeners() {
   }
 
   function closeEmployeeAssignmentsModal() {
-    employeeAssignmentsModal.classList.add('hidden');
-    employeeAssignmentsTitle.textContent = 'Employee Assignments';
-    employeeAssignmentsBody.innerHTML = '';
+      closeInfoModal(
+        employeeAssignmentsModal,
+        employeeAssignmentsTitle,
+        'Employee Assignments',
+        employeeAssignmentsBody
+      );
   }
 
 function openEmployeeAssignmentsModal(employeeId) {
