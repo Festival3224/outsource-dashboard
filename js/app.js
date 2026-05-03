@@ -266,10 +266,32 @@ function initEventListeners() {
                 item.projectId === projectId
               ));
 
-              const effectiveCapacity = getAssignmentEffectiveCapacity(assignment);
-              const revenue = getAssignmentRevenue(project, assignment);
+              const effectiveCapacity = getAssignmentEffectiveCapacity(
+                employee,
+                assignment,
+                state.currentYear,
+                state.currentMonth
+              );
+
+              const revenue = getAssignmentRevenue(
+                project,
+                monthData.employees,
+                employee,
+                assignment,
+                state.currentYear,
+                state.currentMonth
+              );
+
               const cost = getAssignmentCost(employee, assignment);
-              const profit = getAssignmentProfit(employee, project, assignment);
+
+              const profit = getAssignmentProfit(
+                project,
+                monthData.employees,
+                employee,
+                assignment,
+                state.currentYear,
+                state.currentMonth
+              );
 
               return `
                 <tr>
@@ -353,10 +375,36 @@ function openEmployeeAssignmentsModal(employeeId) {
               item.id === assignment.projectId
             ));
 
-            const effectiveCapacity = getAssignmentEffectiveCapacity(assignment);
-            const revenue = project ? getAssignmentRevenue(project, assignment) : 0;
+            const effectiveCapacity = getAssignmentEffectiveCapacity(
+              employee,
+              assignment,
+              state.currentYear,
+              state.currentMonth
+            );
+
+            const revenue = project
+              ? getAssignmentRevenue(
+                project,
+                monthData.employees,
+                employee,
+                assignment,
+                state.currentYear,
+                state.currentMonth
+              )
+              : 0;
+
             const cost = project ? getAssignmentCost(employee, assignment) : 0;
-            const profit = project ? getAssignmentProfit(employee, project, assignment) : 0;
+
+            const profit = project
+              ? getAssignmentProfit(
+                project,
+                monthData.employees,
+                employee,
+                assignment,
+                state.currentYear,
+                state.currentMonth
+              )
+              : 0;
 
             return `
               <tr>

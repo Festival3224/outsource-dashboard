@@ -103,7 +103,13 @@ function renderEmployeesTable(employees) {
           const employeeCapacity = getEmployeeCapacity(employee);
           const monthData = getCurrentMonthData();
           const estimatedPayment = getEmployeeEstimatedPayment(employee);
-          const projectedIncome = getEmployeeProjectedIncome(employee, monthData.projects);
+          const projectedIncome = getEmployeeProjectedIncome(
+            employee,
+            monthData.projects,
+            monthData.employees,
+            state.currentYear,
+            state.currentMonth
+          );
 
           return `
             <tr>
@@ -133,7 +139,7 @@ function renderEmployeesTable(employees) {
                 >
                    Availability
                 </button>
-                
+
                 <button class="table-button assign-button" data-assign-employee-id="${employee.id}">
                   Assign
                 </button>
@@ -173,7 +179,19 @@ function renderProjectsTable(projects) {
        ${projects.map((project) => {
            const monthData = getCurrentMonthData();
 
-           const assignedCapacity = getProjectAssignedCapacity(project.id, monthData.employees);
+           const assignedCapacity = getProjectAssignedCapacity(
+            project.id,
+            monthData.employees,
+            state.currentYear,
+            state.currentMonth
+          );
+
+          const estimatedIncome = getProjectEstimatedIncome(
+            project,
+            monthData.employees,
+            state.currentYear,
+            state.currentMonth
+          );
 
            const assignedEmployeesCount = monthData.employees.filter((employee) => (
                employee.assignments.some((assignment) => assignment.projectId === project.id)
@@ -190,7 +208,7 @@ function renderProjectsTable(projects) {
                  Show Employees (${assignedEmployeesCount})
               </button>
             </td>
-            <td>${formatCurrency(0)}</td>
+            <td>${formatCurrency(estimatedIncome)}</td>
             <td>
               <button class="table-button danger" data-delete-project-id="${project.id}">
                 Delete
