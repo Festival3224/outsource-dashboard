@@ -101,6 +101,7 @@ function renderEmployeesTable(employees) {
       <tbody>
         ${employees.map((employee) => {
           const employeeCapacity = getEmployeeCapacity(employee);
+          const isEmployeeFullyAllocated = employeeCapacity >= MAX_EMPLOYEE_CAPACITY;
           const monthData = getCurrentMonthData();
           const estimatedPayment = getEmployeeEstimatedPayment(employee);
           const projectedIncome = getEmployeeProjectedIncome(
@@ -140,7 +141,12 @@ function renderEmployeesTable(employees) {
                    Availability
                 </button>
 
-                <button class="table-button assign-button" data-assign-employee-id="${employee.id}">
+                <button
+                  class="table-button assign-button"
+                  data-assign-employee-id="${employee.id}"
+                  ${isEmployeeFullyAllocated ? 'disabled' : ''}
+                  title="${isEmployeeFullyAllocated ? 'Employee has reached maximum capacity' : 'Assign employee to project'}"
+                >
                   Assign
                 </button>
 

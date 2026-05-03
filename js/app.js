@@ -133,6 +133,24 @@ function initEventListeners() {
     return `€${Number(value).toFixed(2)}`;
   }
 
+  function getAgeFromDate(dateOfBirth) {
+    const today = new Date();
+    const birthDate = new Date(dateOfBirth);
+
+    let age = today.getFullYear() - birthDate.getFullYear();
+
+    const hasBirthdayPassed =
+      today.getMonth() > birthDate.getMonth()
+      || (today.getMonth() === birthDate.getMonth()
+        && today.getDate() >= birthDate.getDate());
+
+    if (!hasBirthdayPassed) {
+      age -= 1;
+    }
+
+    return age;
+  }
+
   function validateEmployeeForm(showAllErrors = false) {
     const data = getEmployeeFormData();
     const errors = {};
@@ -148,6 +166,8 @@ function initEventListeners() {
 
     if (!data.dateOfBirth) {
       errors.dateOfBirth = 'Date of Birth is required';
+    } else if (getAgeFromDate(data.dateOfBirth) < 18) {
+      errors.dateOfBirth = 'Employee must be at least 18 years old';
     }
 
     if (!data.position) {
@@ -723,6 +743,10 @@ function openEditAssignmentPopup(employeeId, projectId, buttonElement) {
     }
 
     if (assignEmployeeButton) {
+      if (assignEmployeeButton.disabled) {
+        return;
+      }
+
       openAssignPopup(assignEmployeeButton.dataset.assignEmployeeId, assignEmployeeButton);
       return;
     }
