@@ -32,7 +32,13 @@ import {
   formatCapacity,
 } from './calculations.js';
 
-import { getDaysInMonth } from './calendar.js';
+import {
+  getMonthLabel,
+  getWeekdayLabels,
+  getCalendarCells,
+  getWorkingDaysStats,
+  formatVacationDays,
+} from './calendar.js';
 
 function setActiveTab() {
   const projectsTab = document.querySelector('#projects-tab');
@@ -407,41 +413,81 @@ function openEmployeeAvailabilityModal(employeeId) {
     return;
   }
 
-  const selectedDays = new Set(employee.vacationDays || []);
-  const days = getDaysInMonth(state.currentYear, state.currentMonth);
+  const selectedDays = [...(employee.vacationDays || [])];
+  const selectedDaysSet = new Set(selectedDays);
 
-  employeeAvailabilityTitle.textContent = `Availability for ${employee.name} ${employee.surname}`;
+  const monthLabel = getMonthLabel(state.currentYear, state.currentMonth);
+  const weekDays = getWeekdayLabels();
+  const calendarCells = getCalendarCells(state.currentYear, state.currentMonth);
+  const { totalWorkingDays, remainingWorkingDays } = getWorkingDaysStats(
+    state.currentYear,
+    state.currentMonth,
+    selectedDays
+  );
+
+  employeeAvailabilityTitle.textContent = `${employee.name} ${employee.surname} - Availability`;
 
   employeeAvailabilityBody.innerHTML = `
-    <p class="availability-summary">
-      Select vacation days for the current month.
-      Selected: <strong id="availability-selected-count">${selectedDays.size}</strong>
-    </p>
+    <div class="availability-layout">
+      <div class="availability-month">${monthLabel}</div>
 
-    <div class="availability-calendar">
-      ${days.map((day) => `
-        <button
-          type="button"
-          class="availability-day ${selectedDays.has(day.dateKey) ? 'active' : ''}"
-          data-vacation-day="${day.dateKey}"
-        >
-          ${day.day}
-        </button>
-      `).join('')}
-    </div>
+      <div class="availability-divider"></div>
 
-    <div class="availability-actions">
-      <button type="button" class="secondary-button" id="availability-cancel">
-        Cancel
-      </button>
-      <button
-        type="button"
-        class="primary-button"
-        id="availability-save"
-        data-availability-employee-id="${employee.id}"
-      >
-        Save
-      </button>
+      <div class="availability-weekdays">
+        ${weekDays.map((label) => `
+          <div class="availability-weekday">${label}</div>
+        `).join('')}
+      </div>
+
+      <div class="availability-grid">
+        ${calendarCells.map((cell) => {
+          if (!cell) {
+            return '<div class="availability-empty-cell"></div>';
+          }
+
+          return `
+            <button
+              type="button"
+              class="availability-day
+                ${selectedDaysSet.has(cell.dateKey) ? 'active' : ''}
+                ${cell.isWeekend ? 'weekend' : ''}
+              "
+              data-vacation-day="${cell.dateKey}"
+            >
+              ${cell.day}
+            </button>
+          `;
+        }).join('')}
+      </div>
+
+      <div class="availability-divider"></div>
+
+      <div class="availability-summary-stack">
+        <div class="availability-working-box">
+          <strong>Working Days:</strong>
+          <span id="availability-working-days-value">
+            ${remainingWorkingDays}/${totalWorkingDays} days
+          </span>
+        </div>
+
+        <div class="availability-vacation-box">
+          <div class="availability-vacation-info">
+            <strong>Vacation Days:</strong>
+            <span id="availability-vacation-list">
+              ${formatVacationDays(selectedDays)}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            class="availability-save-button"
+            id="availability-save"
+            data-availability-employee-id="${employee.id}"
+          >
+            Set Vacation
+          </button>
+        </div>
+      </div>
     </div>
   `;
 
@@ -801,27 +847,32 @@ function openEditAssignmentPopup(employeeId, projectId, buttonElement) {
 
   employeeAvailabilityBody.addEventListener('click', (event) => {
     const dayButton = event.target.closest('[data-vacation-day]');
-    const cancelButton = event.target.closest('#availability-cancel');
     const saveButton = event.target.closest('#availability-save');
 
     if (dayButton) {
       dayButton.classList.toggle('active');
 
-      const selectedCount = employeeAvailabilityBody.querySelectorAll(
+      const vacationDays = [...employeeAvailabilityBody.querySelectorAll(
         '.availability-day.active'
-      ).length;
+      )].map((button) => button.dataset.vacationDay);
 
-      const selectedCountElement = employeeAvailabilityBody.querySelector(
-        '#availability-selected-count'
+      const vacationListElement = employeeAvailabilityBody.querySelector(
+        '#availability-vacation-list'
       );
 
-      selectedCountElement.textContent = selectedCount;
+      const workingDaysValueElement = employeeAvailabilityBody.querySelector(
+        '#availability-working-days-value'
+      );
 
-      return;
-    }
+      const { totalWorkingDays, remainingWorkingDays } = getWorkingDaysStats(
+        state.currentYear,
+        state.currentMonth,
+        vacationDays
+      );
 
-    if (cancelButton) {
-      closeEmployeeAvailabilityModal();
+      vacationListElement.textContent = formatVacationDays(vacationDays);
+      workingDaysValueElement.textContent = `${remainingWorkingDays}/${totalWorkingDays} days`;
+
       return;
     }
 
@@ -832,7 +883,7 @@ function openEditAssignmentPopup(employeeId, projectId, buttonElement) {
         '.availability-day.active'
       )].map((button) => button.dataset.vacationDay);
 
-      updateEmployeeVacationDays(employeeId, vacationDays);
+     updateEmployeeVacationDays(employeeId, vacationDays);
       closeEmployeeAvailabilityModal();
       renderApp();
     }
