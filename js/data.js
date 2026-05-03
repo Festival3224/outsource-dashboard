@@ -132,6 +132,12 @@ export function deleteProject(projectId) {
     project.id !== projectId
   ));
 
+  monthData.employees.forEach((employee) => {
+    employee.assignments = employee.assignments.filter((assignment) => (
+      assignment.projectId !== projectId
+    ));
+  });
+
   saveData();
 }
 
