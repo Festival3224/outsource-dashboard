@@ -141,7 +141,7 @@ export function deleteProject(projectId) {
   saveData();
 }
 
-export function assignEmployeeToProject(employeeId, projectId) {
+export function assignEmployeeToProject(employeeId, projectId, assignmentData = {}) {
   const monthData = getCurrentMonthData();
   const employee = monthData.employees.find((item) => item.id === employeeId);
   const project = monthData.projects.find((item) => item.id === projectId);
@@ -158,14 +158,27 @@ export function assignEmployeeToProject(employeeId, projectId) {
     return false;
   }
 
-  if (!canAssignEmployeeToProject(employee, project, monthData.employees, 1)) {
+  const capacity = Number(assignmentData.capacity ?? 1);
+  const fit = Number(assignmentData.fit ?? 1);
+
+  if (
+    Number.isNaN(capacity)
+    || Number.isNaN(fit)
+    || capacity <= 0
+    || fit < 0
+    || fit > 1
+  ) {
+    return false;
+  }
+
+  if (!canAssignEmployeeToProject(employee, project, monthData.employees, capacity)) {
     return false;
   }
 
   employee.assignments.push({
     projectId,
-    capacity: 1,
-    fit: 1,
+    capacity,
+    fit,
   });
 
   saveData();

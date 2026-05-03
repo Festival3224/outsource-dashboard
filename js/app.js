@@ -85,6 +85,9 @@ function initEventListeners() {
   const assignProjectSelect = document.querySelector('#assign-project-select');
   const assignSubmit = document.querySelector('#assign-submit');
   const assignCancel = document.querySelector('#assign-cancel');
+  const assignCapacityInput = document.querySelector('#assign-capacity');
+  const assignFitInput = document.querySelector('#assign-fit');
+  const assignError = document.querySelector('#assign-error');
 
   const editAssignmentPopup = document.querySelector('#edit-assignment-popup');
   const editAssignmentForm = document.querySelector('#edit-assignment-form');
@@ -567,6 +570,8 @@ function openEmployeeAvailabilityModal(employeeId) {
     assignPopup.classList.add('hidden');
     assignForm.reset();
     assignSubmit.disabled = true;
+    assignError.textContent = '';
+    delete assignForm.dataset.employeeId;
   }
 
   function openAssignPopup(employeeId, buttonElement) {
@@ -579,6 +584,7 @@ function openEmployeeAvailabilityModal(employeeId) {
 
     const currentCapacity = getEmployeeCapacity(employee);
     const availableCapacity = MAX_EMPLOYEE_CAPACITY - currentCapacity;
+    const initialCapacity = Math.min(1, availableCapacity);
 
     const availableProjects = monthData.projects.filter((project) => {
       const alreadyAssigned = employee.assignments.some((assignment) => (
@@ -594,7 +600,7 @@ function openEmployeeAvailabilityModal(employeeId) {
         monthData.employees
       );
 
-      return availableCapacity >= 1 && projectAvailableCapacity >= 1;
+      return availableCapacity > 0 && projectAvailableCapacity > 0;
     });
 
     assignForm.dataset.employeeId = employeeId;
@@ -634,6 +640,10 @@ function openEmployeeAvailabilityModal(employeeId) {
       `;
     }
 
+    assignCapacityInput.value = formatCapacity(initialCapacity);
+    assignCapacityInput.max = formatCapacity(availableCapacity);
+    assignFitInput.value = 1;
+    assignError.textContent = '';    
     assignSubmit.disabled = true;
 
     const rect = buttonElement.getBoundingClientRect();
@@ -644,6 +654,42 @@ function openEmployeeAvailabilityModal(employeeId) {
     assignPopup.classList.remove('hidden');
   }
 
+function validateAssignForm() {
+  const projectId = assignProjectSelect.value;
+  const capacity = Number(assignCapacityInput.value);
+  const fit = Number(assignFitInput.value);
+  const maxCapacity = Number(assignCapacityInput.max);
+
+  assignError.textContent = '';
+
+  if (!projectId) {
+    assignSubmit.disabled = true;
+    return false;
+  }
+
+  if (
+    Number.isNaN(capacity)
+    || capacity <= 0
+    || capacity > maxCapacity
+  ) {
+    assignError.textContent = `Capacity must be between 0.1 and ${formatCapacity(maxCapacity)}`;
+    assignSubmit.disabled = true;
+    return false;
+  }
+
+  if (
+    Number.isNaN(fit)
+    || fit < 0
+    || fit > 1
+  ) {
+    assignError.textContent = 'Fit must be between 0 and 1';
+    assignSubmit.disabled = true;
+    return false;
+  }
+
+  assignSubmit.disabled = false;
+  return true;
+}  
 
 function closeEditAssignmentPopup() {
   editAssignmentPopup.classList.add('hidden');
@@ -962,8 +1008,35 @@ function openEditAssignmentPopup(employeeId, projectId, buttonElement) {
   });
 
   assignProjectSelect.addEventListener('change', () => {
-    assignSubmit.disabled = !assignProjectSelect.value;
+    const monthData = getCurrentMonthData();
+    const employeeId = assignForm.dataset.employeeId;
+    const employee = monthData.employees.find((item) => item.id === employeeId);
+    const project = monthData.projects.find((item) => item.id === assignProjectSelect.value);
+
+    if (!employee || !project) {
+      assignSubmit.disabled = true;
+      return;
+    }
+
+    const employeeAvailableCapacity = getEmployeeAvailableCapacity(employee);
+    const projectAvailableCapacity = getProjectAvailableCapacity(
+      project,
+      monthData.employees
+    );
+
+    const maxCapacity = Math.min(employeeAvailableCapacity, projectAvailableCapacity);
+
+    assignCapacityInput.max = formatCapacity(maxCapacity);
+
+    if (Number(assignCapacityInput.value) > maxCapacity) {
+      assignCapacityInput.value = formatCapacity(maxCapacity);
+    }
+
+    validateAssignForm();
   });
+
+  assignCapacityInput.addEventListener('input', validateAssignForm);
+  assignFitInput.addEventListener('input', validateAssignForm);
 
   assignCancel.addEventListener('click', closeAssignPopup);
 
@@ -978,19 +1051,24 @@ function openEditAssignmentPopup(employeeId, projectId, buttonElement) {
 
     const employeeId = assignForm.dataset.employeeId;
     const projectId = assignProjectSelect.value;
+    const capacity = Number(assignCapacityInput.value);
+    const fit = Number(assignFitInput.value);
 
     if (!employeeId || !projectId) {
-        return;
+      return;
     }
 
-    const isAssigned = assignEmployeeToProject(employeeId, projectId);
+    if (!validateAssignForm()) {
+      return;
+    }
+
+    const isAssigned = assignEmployeeToProject(employeeId, projectId, {
+      capacity,
+      fit,
+    });
 
     if (!isAssigned) {
-      assignPopupInfo.innerHTML += `
-        <p class="error-message">
-          Assignment failed. Employee or project capacity limit exceeded.
-        </p>
-      `;
+      assignError.textContent = 'Assignment failed. Employee or project capacity limit exceeded.';
       return;
     }
 
