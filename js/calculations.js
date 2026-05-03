@@ -96,3 +96,47 @@ export function getProjectProfit(project, employees) {
   return getProjectEstimatedIncome(project, employees)
     - getProjectCost(project, employees);
 }
+
+export function getEmployeeAvailableCapacity(employee, excludeProjectId = null) {
+  const usedCapacity = employee.assignments.reduce((sum, assignment) => {
+    if (assignment.projectId === excludeProjectId) {
+      return sum;
+    }
+
+    return sum + Number(assignment.capacity || 0);
+  }, 0);
+
+  return MAX_EMPLOYEE_CAPACITY - usedCapacity;
+}
+
+export function getProjectAvailableCapacity(project, employees, excludeEmployeeId = null) {
+  const usedCapacity = employees.reduce((sum, employee) => {
+    if (employee.id === excludeEmployeeId) {
+      return sum;
+    }
+
+    const assignment = employee.assignments.find((item) => (
+      item.projectId === project.id
+    ));
+
+    return sum + Number(assignment?.capacity || 0);
+  }, 0);
+
+  return Number(project.capacity || 0) - usedCapacity;
+}
+
+export function canAssignEmployeeToProject(employee, project, employees, capacity = 1) {
+  const employeeAvailableCapacity = getEmployeeAvailableCapacity(employee);
+  const projectAvailableCapacity = getProjectAvailableCapacity(project, employees);
+
+  return Number(capacity) <= employeeAvailableCapacity
+    && Number(capacity) <= projectAvailableCapacity;
+}
+
+export function canUpdateEmployeeAssignment(employee, project, employees, capacity) {
+  const employeeAvailableCapacity = getEmployeeAvailableCapacity(employee, project.id);
+  const projectAvailableCapacity = getProjectAvailableCapacity(project, employees, employee.id);
+
+  return Number(capacity) <= employeeAvailableCapacity
+    && Number(capacity) <= projectAvailableCapacity;
+}

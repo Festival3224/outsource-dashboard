@@ -1,5 +1,9 @@
 import { state } from './state.js';
 import { saveData } from './storage.js';
+import {
+  canAssignEmployeeToProject,
+  canUpdateEmployeeAssignment,
+} from './calculations.js';
 
 export function getMonthKey(year, month) {
   return `${year}-${month}`;
@@ -134,9 +138,10 @@ export function deleteProject(projectId) {
 export function assignEmployeeToProject(employeeId, projectId) {
   const monthData = getCurrentMonthData();
   const employee = monthData.employees.find((item) => item.id === employeeId);
+  const project = monthData.projects.find((item) => item.id === projectId);
 
-  if (!employee) {
-    return;
+  if (!employee || !project) {
+    return false;
   }
 
   const alreadyAssigned = employee.assignments.some((assignment) => (
@@ -144,7 +149,11 @@ export function assignEmployeeToProject(employeeId, projectId) {
   ));
 
   if (alreadyAssigned) {
-    return;
+    return false;
+  }
+
+  if (!canAssignEmployeeToProject(employee, project, monthData.employees, 1)) {
+    return false;
   }
 
   employee.assignments.push({
@@ -154,6 +163,8 @@ export function assignEmployeeToProject(employeeId, projectId) {
   });
 
   saveData();
+
+  return true;
 }
 
 export function unassignEmployeeFromProject(employeeId, projectId) {
@@ -174,9 +185,10 @@ export function unassignEmployeeFromProject(employeeId, projectId) {
 export function updateEmployeeAssignment(employeeId, projectId, assignmentData) {
   const monthData = getCurrentMonthData();
   const employee = monthData.employees.find((item) => item.id === employeeId);
+  const project = monthData.projects.find((item) => item.id === projectId);
 
-  if (!employee) {
-    return;
+  if (!employee || !project) {
+    return false;
   }
 
   const assignment = employee.assignments.find((item) => (
@@ -184,11 +196,30 @@ export function updateEmployeeAssignment(employeeId, projectId, assignmentData) 
   ));
 
   if (!assignment) {
-    return;
+    return false;
   }
 
-  assignment.capacity = Number(assignmentData.capacity);
-  assignment.fit = Number(assignmentData.fit);
+  const capacity = Number(assignmentData.capacity);
+  const fit = Number(assignmentData.fit);
+
+  if (
+    Number.isNaN(capacity)
+    || Number.isNaN(fit)
+    || capacity <= 0
+    || fit < 0
+    || fit > 1
+  ) {
+    return false;
+  }
+
+  if (!canUpdateEmployeeAssignment(employee, project, monthData.employees, capacity)) {
+    return false;
+  }
+
+  assignment.capacity = capacity;
+  assignment.fit = fit;
 
   saveData();
+
+  return true;
 }

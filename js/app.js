@@ -22,6 +22,8 @@ import { renderApp } from './render.js';
 import {
   MAX_EMPLOYEE_CAPACITY,
   getEmployeeCapacity,
+  getEmployeeAvailableCapacity,
+  getProjectAvailableCapacity,
   getAssignmentEffectiveCapacity,
   getAssignmentRevenue,
   getAssignmentCost,
@@ -398,6 +400,23 @@ function openEmployeeAssignmentsModal(employeeId) {
     const currentCapacity = getEmployeeCapacity(employee);
     const availableCapacity = MAX_EMPLOYEE_CAPACITY - currentCapacity;
 
+    const availableProjects = monthData.projects.filter((project) => {
+      const alreadyAssigned = employee.assignments.some((assignment) => (
+        assignment.projectId === project.id
+      ));
+
+      if (alreadyAssigned) {
+        return false;
+      }
+
+      const projectAvailableCapacity = getProjectAvailableCapacity(
+        project,
+        monthData.employees
+      );
+
+      return availableCapacity >= 1 && projectAvailableCapacity >= 1;
+    });
+
     assignForm.dataset.employeeId = employeeId;
 
     assignPopupTitle.textContent = `Assign ${employee.name} ${employee.surname}`;
@@ -415,12 +434,25 @@ function openEmployeeAssignmentsModal(employeeId) {
 
     assignProjectSelect.innerHTML = `
       <option value="">Select a project</option>
-      ${monthData.projects.map((project) => `
-        <option value="${project.id}">
-          ${project.projectName}
-        </option>
-      `).join('')}
+      ${availableProjects.map((project) => {
+        const projectAvailableCapacity = getProjectAvailableCapacity(
+          project,
+          monthData.employees
+        );
+
+        return `
+          <option value="${project.id}">
+            ${project.projectName} — available ${formatCapacity(projectAvailableCapacity)}
+          </option>
+        `;
+     }).join('')}
     `;
+
+    if (availableProjects.length === 0) {
+      assignProjectSelect.innerHTML = `
+        <option value="">No available projects</option>
+      `;
+    }
 
     assignSubmit.disabled = true;
 
@@ -453,6 +485,15 @@ function openEditAssignmentPopup(employeeId, projectId, buttonElement) {
     item.projectId === projectId
   ));
 
+  const employeeAvailableCapacity = getEmployeeAvailableCapacity(employee, projectId);
+  const projectAvailableCapacity = getProjectAvailableCapacity(
+    project,
+    monthData.employees,
+    employeeId
+  );
+
+  const maxCapacity = Math.min(employeeAvailableCapacity, projectAvailableCapacity);
+
   if (!assignment) {
     return;
   }
@@ -464,10 +505,12 @@ function openEditAssignmentPopup(employeeId, projectId, buttonElement) {
   editAssignmentInfo.innerHTML = `
     <p><strong>Project:</strong> ${project.projectName}</p>
     <p><strong>Company:</strong> ${project.companyName}</p>
+    <p><strong>Max Capacity:</strong> ${formatCapacity(maxCapacity)}</p>
   `;
 
   editAssignmentForm.elements.capacity.value = assignment.capacity;
   editAssignmentForm.elements.fit.value = assignment.fit;
+  editAssignmentForm.elements.capacity.max = formatCapacity(maxCapacity);
 
   const rect = buttonElement.getBoundingClientRect();
 
@@ -698,7 +741,16 @@ function openEditAssignmentPopup(employeeId, projectId, buttonElement) {
         return;
     }
 
-    assignEmployeeToProject(employeeId, projectId);
+    const isAssigned = assignEmployeeToProject(employeeId, projectId);
+
+    if (!isAssigned) {
+      assignPopupInfo.innerHTML += `
+        <p class="error-message">
+          Assignment failed. Employee or project capacity limit exceeded.
+        </p>
+      `;
+      return;
+    }
 
     closeAssignPopup();
     renderApp();
@@ -731,10 +783,19 @@ function openEditAssignmentPopup(employeeId, projectId, buttonElement) {
       return;
     }
 
-    updateEmployeeAssignment(employeeId, projectId, {
+    const isUpdated = updateEmployeeAssignment(employeeId, projectId, {
       capacity,
       fit,
     });
+
+    if (!isUpdated) {
+     editAssignmentInfo.innerHTML += `
+        <p class="error-message">
+          Update failed. Employee or project capacity limit exceeded.
+        </p>
+      `;
+     return;
+    }
 
     closeEditAssignmentPopup();
 
