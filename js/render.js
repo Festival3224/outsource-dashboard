@@ -5,6 +5,9 @@ import {
   MAX_EMPLOYEE_CAPACITY,
   getEmployeeCapacity,
   getProjectAssignedCapacity,
+  getEmployeeEstimatedPayment,
+  getEmployeeProjectedIncome,
+  getProjectEstimatedIncome,
   formatCapacity,
 } from './calculations.js';
 
@@ -97,6 +100,9 @@ function renderEmployeesTable(employees) {
       <tbody>
         ${employees.map((employee) => {
           const employeeCapacity = getEmployeeCapacity(employee);
+          const monthData = getCurrentMonthData();
+          const estimatedPayment = getEmployeeEstimatedPayment(employee);
+          const projectedIncome = getEmployeeProjectedIncome(employee, monthData.projects);
 
           return `
             <tr>
@@ -105,7 +111,7 @@ function renderEmployeesTable(employees) {
               <td>${getAge(employee.dateOfBirth)}</td>
               <td>${employee.position}</td>
               <td>${formatCurrency(employee.salary)}</td>
-              <td>${formatCurrency(0)}</td>
+              <td>${formatCurrency(estimatedPayment)}</td>
               <td>
                 ${formatCapacity(employeeCapacity)} / ${formatCapacity(MAX_EMPLOYEE_CAPACITY)}
               </td>
@@ -117,7 +123,7 @@ function renderEmployeesTable(employees) {
                   Show Assignments (${employee.assignments.length})
                 </button>
               </td>
-              <td>${formatCurrency(0)}</td>
+              <td>${formatCurrency(projectedIncome)}</td>
               <td>
                 <button class="table-button assign-button" data-assign-employee-id="${employee.id}">
                   Assign
@@ -159,7 +165,7 @@ function renderProjectsTable(projects) {
            const monthData = getCurrentMonthData();
 
            const assignedCapacity = getProjectAssignedCapacity(project.id, monthData.employees);
-           
+
            const assignedEmployeesCount = monthData.employees.filter((employee) => (
                employee.assignments.some((assignment) => assignment.projectId === project.id)
            )).length;

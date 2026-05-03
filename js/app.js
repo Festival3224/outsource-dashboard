@@ -23,6 +23,9 @@ import {
   MAX_EMPLOYEE_CAPACITY,
   getEmployeeCapacity,
   getAssignmentEffectiveCapacity,
+  getAssignmentRevenue,
+  getAssignmentCost,
+  getAssignmentProfit,
   formatCapacity,
 } from './calculations.js';
 
@@ -81,12 +84,6 @@ function initEventListeners() {
   const touchedEmployeeFields = new Set();
   const touchedProjectFields = new Set();
 
-  /* function getEmployeeCapacity(employee) {
-    return employee.assignments.reduce((sum, assignment) => (
-      sum + Number(assignment.capacity || 0)
-    ), 0);
-  } */
-
   function getEmployeeFormData() {
     const formData = new FormData(employeeForm);
 
@@ -114,6 +111,10 @@ function initEventListeners() {
     form.reset();
     touchedFields.clear();
     validateForm();
+  }
+
+  function formatCurrency(value) {
+    return `€${Number(value).toFixed(2)}`;
   }
 
   function validateEmployeeForm(showAllErrors = false) {
@@ -250,6 +251,9 @@ function initEventListeners() {
               ));
 
               const effectiveCapacity = getAssignmentEffectiveCapacity(assignment);
+              const revenue = getAssignmentRevenue(project, assignment);
+              const cost = getAssignmentCost(employee, assignment);
+              const profit = getAssignmentProfit(employee, project, assignment);
 
               return `
                 <tr>
@@ -258,9 +262,9 @@ function initEventListeners() {
                   <td>${assignment.fit ?? '-'}</td>
                   <td>-</td>
                   <td>${formatCapacity(effectiveCapacity)}</td>
-                  <td>€0.00</td>
-                  <td>€0.00</td>
-                  <td>€0.00</td>
+                  <td>${formatCurrency(revenue)}</td>
+                  <td>${formatCurrency(cost)}</td>
+                  <td>${formatCurrency(profit)}</td>
                   <td>
                     <button
                        class="table-button"
@@ -320,6 +324,9 @@ function openEmployeeAssignmentsModal(employeeId) {
             <th>Capacity</th>
             <th>Fit</th>
             <th>Effective</th>
+            <th>Revenue</th>
+            <th>Cost</th>
+            <th>Profit</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -331,6 +338,9 @@ function openEmployeeAssignmentsModal(employeeId) {
             ));
 
             const effectiveCapacity = getAssignmentEffectiveCapacity(assignment);
+            const revenue = project ? getAssignmentRevenue(project, assignment) : 0;
+            const cost = project ? getAssignmentCost(employee, assignment) : 0;
+            const profit = project ? getAssignmentProfit(employee, project, assignment) : 0;
 
             return `
               <tr>
@@ -339,6 +349,9 @@ function openEmployeeAssignmentsModal(employeeId) {
                 <td>${assignment.capacity ?? '-'}</td>
                 <td>${assignment.fit ?? '-'}</td>
                 <td>${formatCapacity(effectiveCapacity)}</td>
+                <td>${formatCurrency(revenue)}</td>
+                <td>${formatCurrency(cost)}</td>
+                <td>${formatCurrency(profit)}</td>
                 <td>
                   <button
                     class="table-button"
