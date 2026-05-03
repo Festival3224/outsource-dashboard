@@ -91,6 +91,7 @@ function renderEmployeesTable(employees) {
           <th>Salary</th>
           <th>Estimated Payment</th>
           <th>Capacity</th>
+          <th>Vacation</th>
           <th>Assignments</th>
           <th>Projected Income</th>
           <th>Actions</th>
@@ -115,6 +116,7 @@ function renderEmployeesTable(employees) {
               <td>
                 ${formatCapacity(employeeCapacity)} / ${formatCapacity(MAX_EMPLOYEE_CAPACITY)}
               </td>
+              <td>${employee.vacationDays?.length ?? 0} days</td>
               <td>
                <button
                   class="table-button info-button"
@@ -125,6 +127,13 @@ function renderEmployeesTable(employees) {
               </td>
               <td>${formatCurrency(projectedIncome)}</td>
               <td>
+                <button
+                  class="table-button availability-button"
+                  data-edit-availability-employee-id="${employee.id}"
+                >
+                   Availability
+                </button>
+                
                 <button class="table-button assign-button" data-assign-employee-id="${employee.id}">
                   Assign
                 </button>

@@ -15,6 +15,7 @@ import {
   assignEmployeeToProject,
   unassignEmployeeFromProject,
   updateEmployeeAssignment,
+  updateEmployeeVacationDays,
 } from './data.js';
 
 import { renderApp } from './render.js';
@@ -30,6 +31,8 @@ import {
   getAssignmentProfit,
   formatCapacity,
 } from './calculations.js';
+
+import { getDaysInMonth } from './calendar.js';
 
 function setActiveTab() {
   const projectsTab = document.querySelector('#projects-tab');
@@ -82,6 +85,11 @@ function initEventListeners() {
   const editAssignmentTitle = document.querySelector('#edit-assignment-title');
   const editAssignmentInfo = document.querySelector('#edit-assignment-info');
   const editAssignmentCancel = document.querySelector('#edit-assignment-cancel');
+
+  const employeeAvailabilityModal = document.querySelector('#employee-availability-modal');
+  const employeeAvailabilityClose = document.querySelector('#employee-availability-close');
+  const employeeAvailabilityTitle = document.querySelector('#employee-availability-title');
+  const employeeAvailabilityBody = document.querySelector('#employee-availability-body');
 
   const touchedEmployeeFields = new Set();
   const touchedProjectFields = new Set();
@@ -262,7 +270,7 @@ function initEventListeners() {
                   <td>${employee.name} ${employee.surname}</td>
                   <td>${assignment.capacity ?? '-'}</td>
                   <td>${assignment.fit ?? '-'}</td>
-                  <td>-</td>
+                  <td>${employee.vacationDays?.length ?? 0} days</td>
                   <td>${formatCapacity(effectiveCapacity)}</td>
                   <td>${formatCurrency(revenue)}</td>
                   <td>${formatCurrency(cost)}</td>
@@ -380,6 +388,64 @@ function openEmployeeAssignmentsModal(employeeId) {
   }
 
   employeeAssignmentsModal.classList.remove('hidden');
+}
+
+function closeEmployeeAvailabilityModal() {
+  closeInfoModal(
+    employeeAvailabilityModal,
+    employeeAvailabilityTitle,
+    'Employee Availability',
+    employeeAvailabilityBody
+  );
+}
+
+function openEmployeeAvailabilityModal(employeeId) {
+  const monthData = getCurrentMonthData();
+  const employee = monthData.employees.find((item) => item.id === employeeId);
+
+  if (!employee) {
+    return;
+  }
+
+  const selectedDays = new Set(employee.vacationDays || []);
+  const days = getDaysInMonth(state.currentYear, state.currentMonth);
+
+  employeeAvailabilityTitle.textContent = `Availability for ${employee.name} ${employee.surname}`;
+
+  employeeAvailabilityBody.innerHTML = `
+    <p class="availability-summary">
+      Select vacation days for the current month.
+      Selected: <strong id="availability-selected-count">${selectedDays.size}</strong>
+    </p>
+
+    <div class="availability-calendar">
+      ${days.map((day) => `
+        <button
+          type="button"
+          class="availability-day ${selectedDays.has(day.dateKey) ? 'active' : ''}"
+          data-vacation-day="${day.dateKey}"
+        >
+          ${day.day}
+        </button>
+      `).join('')}
+    </div>
+
+    <div class="availability-actions">
+      <button type="button" class="secondary-button" id="availability-cancel">
+        Cancel
+      </button>
+      <button
+        type="button"
+        class="primary-button"
+        id="availability-save"
+        data-availability-employee-id="${employee.id}"
+      >
+        Save
+      </button>
+    </div>
+  `;
+
+  employeeAvailabilityModal.classList.remove('hidden');
 }
 
 
@@ -529,6 +595,7 @@ function openEditAssignmentPopup(employeeId, projectId, buttonElement) {
     const showProjectEmployeesButton = event.target.closest('[data-show-project-employees-id]');
     const assignEmployeeButton = event.target.closest('[data-assign-employee-id]');
     const showEmployeeAssignmentsButton = event.target.closest('[data-show-employee-assignments-id]');
+    const editAvailabilityButton = event.target.closest('[data-edit-availability-employee-id]');
 
     if (addEmployeeButton && state.currentView === 'employees') {
       touchedEmployeeFields.clear();
@@ -553,6 +620,11 @@ function openEditAssignmentPopup(employeeId, projectId, buttonElement) {
 
     if (showEmployeeAssignmentsButton) {
       openEmployeeAssignmentsModal(showEmployeeAssignmentsButton.dataset.showEmployeeAssignmentsId);
+      return;
+    }
+
+    if (editAvailabilityButton) {
+      openEmployeeAvailabilityModal(editAvailabilityButton.dataset.editAvailabilityEmployeeId);
       return;
     }
 
@@ -667,6 +739,14 @@ function openEditAssignmentPopup(employeeId, projectId, buttonElement) {
     }
   });
 
+  employeeAvailabilityClose.addEventListener('click', closeEmployeeAvailabilityModal);
+
+  employeeAvailabilityModal.addEventListener('click', (event) => {
+    if (event.target === employeeAvailabilityModal) {
+      event.stopPropagation();
+    }
+  });
+
   projectEmployeesBody.addEventListener('click', (event) => {
     const editButton = event.target.closest('[data-edit-assignment-employee-id]');
 
@@ -717,6 +797,45 @@ function openEditAssignmentPopup(employeeId, projectId, buttonElement) {
     unassignEmployeeFromProject(employeeId, projectId);
     openEmployeeAssignmentsModal(employeeId);
     renderApp();
+  });
+
+  employeeAvailabilityBody.addEventListener('click', (event) => {
+    const dayButton = event.target.closest('[data-vacation-day]');
+    const cancelButton = event.target.closest('#availability-cancel');
+    const saveButton = event.target.closest('#availability-save');
+
+    if (dayButton) {
+      dayButton.classList.toggle('active');
+
+      const selectedCount = employeeAvailabilityBody.querySelectorAll(
+        '.availability-day.active'
+      ).length;
+
+      const selectedCountElement = employeeAvailabilityBody.querySelector(
+        '#availability-selected-count'
+      );
+
+      selectedCountElement.textContent = selectedCount;
+
+      return;
+    }
+
+    if (cancelButton) {
+      closeEmployeeAvailabilityModal();
+      return;
+    }
+
+    if (saveButton) {
+      const employeeId = saveButton.dataset.availabilityEmployeeId;
+
+      const vacationDays = [...employeeAvailabilityBody.querySelectorAll(
+        '.availability-day.active'
+      )].map((button) => button.dataset.vacationDay);
+
+      updateEmployeeVacationDays(employeeId, vacationDays);
+      closeEmployeeAvailabilityModal();
+      renderApp();
+    }
   });
 
   assignProjectSelect.addEventListener('change', () => {

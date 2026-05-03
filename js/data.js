@@ -229,3 +229,18 @@ export function updateEmployeeAssignment(employeeId, projectId, assignmentData) 
 
   return true;
 }
+
+export function updateEmployeeVacationDays(employeeId, vacationDays) {
+  const monthData = getCurrentMonthData();
+  const employee = monthData.employees.find((item) => item.id === employeeId);
+
+  if (!employee) {
+    return false;
+  }
+
+  employee.vacationDays = vacationDays;
+
+  saveData();
+
+  return true;
+}
