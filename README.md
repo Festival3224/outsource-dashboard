@@ -129,6 +129,7 @@ Implemented:
 - Monthly data structure
 - LocalStorage persistence
 - Employees and Projects views
+- Initial sample data
 - Add Employee
 - Add Project
 - Delete Employee
@@ -149,6 +150,7 @@ Implemented:
 
 Planned improvements:
 
+- Full Seed Data feature: copy employees and projects from another month and clear vacation days during copying
 - Unassign confirmation popup with financial details
 - Inline editing for employee position and salary
 - Total estimated income below projects table
