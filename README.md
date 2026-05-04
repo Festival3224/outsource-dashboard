@@ -20,6 +20,12 @@ The application was built as part of the RS School JavaScript/Frontend course ta
 - Each month has its own independent employees and projects data.
 - The selected view is saved between page reloads.
 - Data is persisted in `localStorage`.
+- The application includes initial sample data with 3 employees and 2 projects.
+- Full Seed Data functionality from the task specification is planned:
+  - open a popup with months that already contain data;
+  - show the number of employees, projects, and total estimated income for each available month;
+  - copy data from a selected source month to the current month;
+  - clear vacation days during copying because vacation days are month-specific.
 
 ### Employees
 
