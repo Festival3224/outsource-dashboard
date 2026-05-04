@@ -87,6 +87,7 @@ Current assignment revenue logic is based on effective capacity and project budg
 
 ## Project Structure
 
+```txt
 outsource-dashboard/
 ├── index.html
 ├── css/
@@ -100,6 +101,7 @@ outsource-dashboard/
 │   ├── calculations.js
 │   └── calendar.js
 └── README.md
+```
 
 
 ## Main Modules
